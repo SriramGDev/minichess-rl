@@ -8,8 +8,8 @@ class NeuralNetwork():
     def __init__(self, game, model_class, lr=1e-3, weight_decay=1e-8, batch_size=64, cuda=False):
         self.game = game
         self.batch_size = batch_size
-        input_shape = game.get_initial_state().shape
-        p_shape = game.get_available_actions(game.get_initial_state()).shape
+        input_shape = game.get_initial_state()[0].shape
+        p_shape = game.get_available_actions(game.get_initial_state()[0]).shape
         self.model = model_class(input_shape, p_shape)
         self.cuda = cuda
         if self.cuda:

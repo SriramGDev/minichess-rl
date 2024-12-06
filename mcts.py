@@ -1,11 +1,12 @@
 import math
 import numpy as np
+from collections import defaultdict
+import sys
 
 # Concerns: Add epsilon amount to UCB evaluation to ensure probability is considered
 # Caveat: Q in heuristic might obviate this.
 # Concerns: No Dir noise being added. If it is added, tests would break.
 # Caveat: Make Dir a switch, write tests that use Dir with fixed seed.
-
 
 # An efficient, vectorized Monte Carlo tree search implementation.
 # Uses no loops, done completely with numpy.
@@ -26,10 +27,10 @@ class MCTS():
     # The epsilon fix prevents the U term from being 0 when unexplored (N=0).
     # With the fix, priors (P) can be factored in immediately during selection and expansion.
     # This makes the search more efficient, given there are strong priors.
-    def simulate(self, s, cpuct=1, epsilon_fix=True):
+    def simulate(self, s, state_map, cpuct=1, epsilon_fix=True):
         hashed_s = self.np_hash(s) # Key for state in dictionary
         current_player = self.game.get_player(s)
-        if hashed_s in self.tree: # Not at leaf; select.
+        if hashed_s in self.tree and state_map[hashed_s]<3: # Not at leaf; select.
             stats = self.tree[hashed_s]
             N, Q, P = stats[:,1], stats[:,2], stats[:,3]
             U = cpuct*P*math.sqrt(N.sum() + (1e-6 if epsilon_fix else 0))/(1 + N)
@@ -38,8 +39,8 @@ class MCTS():
             best_a = stats[best_a_idx, 0] # Pick best action to take
             template = np.zeros_like(self.game.get_available_actions(s)) # Submit action to get s'
             template[tuple(best_a)] = True
-            s_prime = self.game.take_action(s, template)
-            v, winning_player = self.simulate(s_prime) # Forward simulate with this action
+            s_prime, state_map_prime = self.game.take_action(s, state_map, template)
+            v, winning_player = self.simulate(s_prime, state_map_prime) # Forward simulate with this action
             n, q = N[best_a_idx], Q[best_a_idx]
             adj_v = v if current_player == winning_player else -v
             stats[best_a_idx, 2] = (n*q+adj_v)/(n + 1)
@@ -47,9 +48,9 @@ class MCTS():
             return v, winning_player
 
         else: # Expand
-            w = self.game.check_winner(s)
+            w = self.game.check_winner(s, state_map)
             if w is not None: # Reached a terminal node
-                return 1 if w is not -1 else 0, w # Someone won, or tie
+                return 1 if w != -1 else 0, w # Someone won, or tie
             available_actions = self.game.get_available_actions(s)
             idx = np.stack(np.where(available_actions)).T
             p, v = self.nn.predict(s)

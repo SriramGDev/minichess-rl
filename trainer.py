@@ -1,10 +1,12 @@
 import time
+from tqdm import tqdm
 import numpy as np
 from multiprocessing.dummy import Pool as ThreadPool
 from mcts import MCTS
 from play import play_match
 from players.uninformed_mcts_player import UninformedMCTSPlayer
 from players.deep_mcts_player import DeepMCTSPlayer
+from collections import defaultdict
 
 # Object that coordinates AlphaZero training.
 class Trainer:
@@ -24,16 +26,15 @@ class Trainer:
 
     # Does one game of self play and generates training samples.
     def self_play(self, temperature):
-        s = self.game.get_initial_state()
+        s, state_map = self.game.get_initial_state()
         tree = MCTS(self.game, self.nn)
 
         data = []
         w = None
         while w is None:
-            
             # Think
             for _ in range(self.num_simulations):
-                tree.simulate(s, cpuct=self.cpuct)
+                tree.simulate(s, state_map, cpuct=self.cpuct)
 
             # Fetch action distribution and append training example template.
             dist = tree.get_distribution(s, temperature=temperature)
@@ -47,10 +48,10 @@ class Trainer:
             available = self.game.get_available_actions(s)
             template = np.zeros_like(available)
             template[a] = 1
-            s = self.game.take_action(s, template)
+            s, state_map = self.game.take_action(s, state_map, template)
 
             # Check winner
-            w = self.game.check_winner(s)
+            w = self.game.check_winner(s, state_map)
 
         # Update training examples with outcome
         data = np.array(data)
@@ -59,7 +60,6 @@ class Trainer:
         else:
             data[data[:,0] == w, -1] = 1
             data[data[:,0] != w, -1] = -1
-
         return data[:,1:]
 
 

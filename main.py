@@ -1,16 +1,8 @@
 import json
 import sys
 import numpy as np
-from models.mlp import MLP
-from models.minivgg import MiniVGG
-from models.smallvgg import SmallVGG
-from models.bigvgg import BigVGG
-from models.resnet import ResNet
-from models.senet import SENet
-from games.tictactoe import TicTacToe
-from games.leapfrog import ThreePlayerLeapFrog
-from games.connect4 import Connect4
-from games.guessit import TwoPlayerGuessIt
+from models.zero import Zero
+from games.minichess import MiniChess
 from neural_network import NeuralNetwork
 from trainer import Trainer
 from experiments import evaluate_against_uninformed
@@ -61,6 +53,6 @@ while True:
 
     # Evaluate how the current checkpoint performs against MCTS agents of increasing strength
     # that do no use a heursitic.
-    for opponent_strength in [10, 20, 40, 80, 160, 320, 640, 1280]:
+    for opponent_strength in [10, 20, 40, 80, 160]:
         evaluate_against_uninformed(checkpoint=iteration, game=game, model_class=model_class,
             my_sims=sims, opponent_sims=opponent_strength, cuda=cuda)

@@ -1,6 +1,6 @@
 {
-    "game": "Connect4",
-    "model": "SmallVGG",
+    "game": "MiniChess",
+    "model": "Zero",
     "ckpt_frequency": 10,
     "num_updates": 100,
     "num_games": 30,
@@ -11,7 +11,7 @@
     "batch_size": 64,
     "num_threads": 2,
     "cuda": false,
-    "verbose": false,
-    "resume": false,
+    "verbose": true,
+    "resume": true,
     "buffer_size_limit": null
 }

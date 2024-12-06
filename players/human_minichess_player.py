@@ -2,8 +2,9 @@ import sys
 import numpy as np
 sys.path.append("..")
 from player import Player
+from utils.colors import Colors, Styles
 
-class HumanPlayer(Player):
+class HumanMinichessPlayer(Player):
 
     def __init__(self, game):
         self.game = game
@@ -11,8 +12,11 @@ class HumanPlayer(Player):
     def update_state(self, s, state_map):
         while True:
             try:
-                a = input()
-                a = tuple([int(x) for x in a.split(" ")])
+                a = input('{}{}{}┏━ Your move ━━━━━━━━━━━┓ \n{}┗{}{}'.format(
+                    Styles.PADDING_SMALL, Colors.WHITE, Colors.BOLD,\
+                            Styles.PADDING_SMALL, Styles.PADDING_SMALL,
+                            Colors.RESET))
+                a = (5-int(a[1]), ord(a[0])-ord('a'), 5-int(a[3]), ord(a[2])-ord('a'))
                 available = self.game.get_available_actions(s)
                 template = np.zeros_like(available)
                 template[a] = 1

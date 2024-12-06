@@ -35,7 +35,7 @@ class BigVGG(Model):
     def forward(self, x):
         batch_size = len(x)
         this_output_shape = tuple([batch_size] + list(self.output_shape))
-        x = x.permute(0,3,1,2) # NHWC -> NCHW
+        #x = x.permute(0,3,1,2) # NHWC -> NCHW
 
         print(x.shape)
         
@@ -49,12 +49,15 @@ class BigVGG(Model):
 
     def VGG(self, layarr):
         layers = []
-        prevConvLayerSize = 3
-        for lname in layarr:
+        prevConvLayerSize = 64 
+        conv = nn.Conv2d(13, 64, kernel_size=5, padding=1)
+        batch = nn.BatchNorm2d(64)
+        layers += [conv, batch, self.relu]
+        for lname in layarr[1:]:
             if lname == 'pool':
-                layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
+                layers.append(nn.MaxPool2d(kernel_size=5, stride=2))
             else:
-                conv = nn.Conv2d(prevConvLayerSize, lname, kernel_size=3, padding=1)
+                conv = nn.Conv2d(prevConvLayerSize, lname, kernel_size=5, padding=2)
                 batch = nn.BatchNorm2d(lname)
                 layers += [conv, batch, self.relu]
                 prevConvLayerSize = lname

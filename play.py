@@ -17,16 +17,16 @@ def play_match(game, players, verbose=False, permute=False):
 
     # Run the matches (there will be multiple if permute=True)
     for m in matches:
-        s = game.get_initial_state()
+        s, state_map = game.get_initial_state()
         if verbose: game.visualize(s)
-        winner = game.check_winner(s)
+        winner = game.check_winner(s, state_map)
         while winner is None:
             p_num = game.get_player(s)
             p = m[p_num]
             if verbose: print("Player {}'s turn.".format(p_num))
-            s = p.update_state(s)
+            s, state_map = p.update_state(s, state_map)
             if verbose: game.visualize(s)
-            winner = game.check_winner(s)
+            winner = game.check_winner(s, state_map)
         for i, p in enumerate(m):
             if winner == -1:
                 scores[p] += .5/len(matches)
@@ -51,28 +51,25 @@ def play_match(game, players, verbose=False, permute=False):
 
 if __name__ == "__main__":
     from players.human_player import HumanPlayer
+    from players.human_minichess_player import HumanMinichessPlayer
     from neural_network import NeuralNetwork
-    from models.minivgg import MiniVGG
-    from models.smallvgg import SmallVGG
-    from models.senet import SENet
+    from models.zero import Zero
     from players.uninformed_mcts_player import UninformedMCTSPlayer
     from players.deep_mcts_player import DeepMCTSPlayer
-    from games.connect4 import Connect4
-    from games.tictactoe import TicTacToe
-    from games.leapfrog import ThreePlayerLeapFrog
+    from games.minichess import MiniChess
 
 
     # Change these variable 
-    game = Connect4()
-    ckpt = 775
-    nn = NeuralNetwork(game, SENet, cuda=True)
+    game = MiniChess()
+    ckpt = 140
+    nn = NeuralNetwork(game, Zero, cuda=False)
     nn.load(ckpt)
     
-    # HumanPlayer(game),
-    # UninformedMCTSPlayer(game, simulations=1000)
-    # DeepMCTSPlayer(game, nn, simulations=50)
+    human =  HumanMinichessPlayer(game)
+    uninformed = UninformedMCTSPlayer(game, simulations=640)
+    deep = DeepMCTSPlayer(game, nn, simulations=200)
     
-    players = [HumanPlayer(game), DeepMCTSPlayer(game, nn, simulations=50)]
-    for _ in range(5):
+    players = [deep, human]
+    for _ in range(1):
         print(play_match(game, players, verbose=True, permute=True))
     
