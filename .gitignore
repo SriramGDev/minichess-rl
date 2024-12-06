@@ -1,5 +1,5 @@
 __pycache__/
 *.ckpt
 *.pyc
-checkpoints/
-!checkpoints/*-trained*
+checkpoints/MiniChess-Zero/*
+!checkpoints/MiniChess-Zero/540.ckpt
