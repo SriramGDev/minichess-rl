@@ -17,17 +17,18 @@ def play_match(level, black):
 
     try:
         game = MiniChess()
-        ckpt = 540
+        ckpt = 320
         nn = NeuralNetwork(game, Zero, cuda=False)
         nn.load(ckpt)
 
         human =  HumanMinichessPlayer(game)
         deep = DeepMCTSPlayer(game, nn, simulations=args.level*10)
+        deep1 = DeepMCTSPlayer(game, nn, simulations=args.level*10)
         if black:
             players = [deep, human]
             human_num = 1
         else:
-            players = [human, deep]
+            players = [deep1, deep]
             human_num = 0
 
         s, state_map = game.get_initial_state()

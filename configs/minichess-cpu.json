@@ -12,6 +12,6 @@
     "num_threads": 2,
     "cuda": false,
     "verbose": true,
-    "resume": true,
+    "resume": false,
     "buffer_size_limit": null
 }

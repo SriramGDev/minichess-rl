@@ -1,19 +1,16 @@
-
-
 import os
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
-from models.smallvgg import SmallVGG
-from models.minivgg import MiniVGG
-from models.mlp import MLP
-from models.senet import SENet
+from collections import defaultdict
 from neural_network import NeuralNetwork
-from games.connect4 import Connect4
-from games.tictactoe import TicTacToe
-from games.leapfrog import ThreePlayerLeapFrog
 from players.deep_mcts_player import DeepMCTSPlayer
+from players.deep_mcts_player import DeepMCTSPlayerAction
 from players.uninformed_mcts_player import UninformedMCTSPlayer
 from play import play_match
+
+from models.zero import Zero
+from games.minichess import MiniChess
 
 
 # Evaluate the outcome of playing a checkpoint against an uninformed MCTS agent
@@ -112,33 +109,75 @@ def plot_train_loss(game, model_classes, cudas):
         error = np.convolve(error, np.ones(window), mode="valid")/window
         min_len = len(error) if min_len is None else min(min_len, len(error))
         plt.plot(error, label=model_class.__name__)
+        
 
-    plt.title("Training loss for {}".format(game.__class__.__name__))
+    plt.title("Training loss for CNN")
     ax.set_xlim(left=0, right=min_len)
     ax.set_ylabel("Error")
     ax.set_xlabel("Iteration")
-    plt.legend()
+    plt.savefig("../../../report/images/loss.png", dpi=400)
+    plt.hist(error, bins=50)
     plt.show()
 
+def openings(game, model_class, cuda, a):
+    nn = NeuralNetwork(game, model_class, cuda=cuda)
+    checkpoints = nn.list_checkpoints()
+    a = (5-int(a[1]), ord(a[0])-ord('a'), 5-int(a[3]), ord(a[2])-ord('a'))
+    s, state_map = game.get_initial_state()
+    available = game.get_available_actions(s)
+    template = np.zeros_like(available)
+    template[a] = 1
+    new_s, new_state_map = game.take_action(s, state_map, template)
+    responses = defaultdict(int)
+    for ckpt in checkpoints:
+        nn.load(ckpt)
+        deep = DeepMCTSPlayerAction(game, nn, simulations=50)
+        action = deep.update_state(new_s, new_state_map)
+        responses[action] += 1
+    return responses
 
-
-
-
+def strength(checkpoint, game, model_class, sims, cuda=False, num_games=50):
+    my_model = NeuralNetwork(game, model_class, cuda=cuda)
+    my_model.load(checkpoint)
+    my_player = DeepMCTSPlayer(game, my_model, sims)
+    contender = UninformedMCTSPlayer(game, sims)
+    scores = []
+    for _ in tqdm(range(num_games)):
+        score, outcomes = play_match(game, [my_player, contender], verbose=False, permute=True)
+        scores.append(score[my_player])
+    return scores
 
 if __name__ == "__main__":
     checkpoint = 13
-    game = TicTacToe()
-    model_class = MiniVGG
+    game = MiniChess()
+    model_class = Zero
     sims = 50
     cuda = False
     
-    print("*** Rank Checkpoints ***")
-    rank_checkpoints(game, model_class, sims, cuda)
-    print("*** One vs All ***")
-    one_vs_all(checkpoint, game, model_class, sims, cuda)
-    print("*** Effective Model Power ***")
-    effective_model_power(checkpoint, game, model_class, sims, cuda)
-    plot_train_loss(game, [model_class], [cuda])
+    #print("*** Rank Checkpoints ***")
+    #rank_checkpoints(game, model_class, sims, cuda)
+    #print("*** One vs All ***")
+    #one_vs_all(checkpoint, game, model_class, sims, cuda)
+    #print("*** Effective Model Power ***")
+    #effective_model_power(checkpoint, game, model_class, sims, cuda)
+    #plot_train_loss(game, [model_class], [cuda])
+    #for file in ["a", "b", "c", "d", "e"]:
+    #    move = "{}2{}3".format(file, file)
+    #    print(dict(openings(game, model_class, cuda, move)))
+
+    ckpt_score = []
+    for ckpt in range(10, 360, 10):
+        scores = strength(ckpt, game, model_class, 10, num_games=10)
+        ckpt_score.append(sum(scores))
+
+
+    fig, ax = plt.subplots(1)
+    ax.set_title("Performance vs. uninformed MCTS")
+    ax.set_xlabel("Checkpoint")
+    ax.set_ylabel("Games won")
+    ax.plot(list(range(10,360,10)), ckpt_score)
+    plt.savefig("../../../report/images/uninformed.png", dpi=400)
+    plt.show()
 
 
     '''

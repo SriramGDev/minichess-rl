@@ -120,5 +120,5 @@ class NeuralNetwork():
         path = "checkpoints/{}-{}/".format(self.game.__class__.__name__, network_name)
         if  not os.path.isdir(path):
             return []
-        return sorted([filename.split(".ckpt")[0] for filename in os.listdir(path) if filename.endswith(".ckpt")])
+        return sorted([filename.split(".ckpt")[0] for filename in os.listdir(path) if filename.endswith(".ckpt")], key=lambda s: int(s))
 

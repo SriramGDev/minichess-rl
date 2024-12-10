@@ -1,4 +1,5 @@
 from itertools import permutations
+import time
 
 # Runs a match with the given game and list of players.
 # Returns a dictionary of points. It will map each player object to its score.
@@ -25,7 +26,7 @@ def play_match(game, players, verbose=False, permute=False):
             p = m[p_num]
             if verbose: print("Player {}'s turn.".format(p_num))
             s, state_map = p.update_state(s, state_map)
-            if verbose: game.visualize(s)
+            if verbose: print(game.visualize(s))
             winner = game.check_winner(s, state_map)
         for i, p in enumerate(m):
             if winner == -1:
@@ -61,15 +62,15 @@ if __name__ == "__main__":
 
     # Change these variable 
     game = MiniChess()
-    ckpt = 140
+    ckpt = 190
     nn = NeuralNetwork(game, Zero, cuda=False)
     nn.load(ckpt)
     
     human =  HumanMinichessPlayer(game)
-    uninformed = UninformedMCTSPlayer(game, simulations=640)
-    deep = DeepMCTSPlayer(game, nn, simulations=200)
+    uninformed = UninformedMCTSPlayer(game, simulations=80)
+    deep = DeepMCTSPlayer(game, nn, simulations=5)
     
-    players = [deep, human]
+    players = [deep, uninformed]
     for _ in range(1):
         print(play_match(game, players, verbose=True, permute=True))
     

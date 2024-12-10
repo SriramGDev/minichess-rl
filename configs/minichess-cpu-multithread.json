@@ -1,0 +1,17 @@
+{
+    "game": "MiniChess",
+    "model": "Zero",
+    "ckpt_frequency": 10,
+    "num_updates": 100,
+    "num_games": 30,
+    "weight_decay": 1e-4,
+    "lr": 1e-3,
+    "cpuct": 3,
+    "num_simulations": 10,
+    "batch_size": 64,
+    "num_threads": 4,
+    "cuda": false,
+    "verbose": true,
+    "resume": true,
+    "buffer_size_limit": null
+}

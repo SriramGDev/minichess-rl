@@ -34,7 +34,7 @@ class MiniChess(Game):
     # Returns a boolean ndarray of actions, where True indicates an available action
     # and False indicates an unavailable action at the current state s.
     # The shape of this action ndarray does not have to match the shape of the state.
-    def get_available_actions(self, s):
+    def get_available_actions(self, s, check=True):
         actions = np.zeros((5, 5, 5, 5), dtype=bool) # actions[i][j][k][l] represents whether the piece at position (i,j) can move to (k,l)
         white_pieces = s[:6, :, :].sum(axis=0)
         black_pieces = s[6:12, :, :].sum(axis=0)
@@ -44,12 +44,7 @@ class MiniChess(Game):
             my_color = white_pieces
         else:
             my_color = black_pieces
-        for i in range(5):
-            for j in range(5):
-                if current_color == 1 and s[5,i,j] == 1.:
-                    king_position = (i,j)
-                elif current_color == 0 and s[11,i,j] == 1.:
-                    king_position = (i,j)
+
         for i in range(5):
             for j in range(5):
                 for layer in range(current_color*6, current_color*6+6):
@@ -87,12 +82,37 @@ class MiniChess(Game):
                         elif layer_map[layer] == "K":
                             actions = self.king_actions(i, j, is_empty, my_color, actions)
 
+        if check:
+            for i in range(5):
+                for j in range(5):
+                    for k in range(5):
+                        for l in range(5):
+                            if actions[i,j,k,l]:
+                                template = np.zeros_like(actions)
+                                template[i,j,k,l] = True
+                                new_state, _ = self.take_action(s, defaultdict(int), template)
+                                if self.in_check(current_color, new_state):
+                                    actions[i,j,k,l] = False
+
+        return actions
+
+
+    def in_check(self, my_color, s):
+        s_copy = s.copy()
+        s_copy[12, :, :] = 1-my_color
+        opp_actions = self.get_available_actions(s_copy, check=False)
         for i in range(5):
             for j in range(5):
-                if actions[i,j,king_position[0],king_position[1]]:
-                    actions = np.zeros((5,5,5,5), dtype=bool)
-                    actions[i,j,king_position[0],king_position[1]] = True # force king capture if possible
-        return actions
+                if s[my_color*6+5, i, j] == 1:
+                    king_position = (i,j)
+        for i in range(5):
+            for j in range(5):
+                if opp_actions[i, j, king_position[0], king_position[1]]:
+                    return True
+        return False
+
+
+
 
     def rook_actions(self, i, j, is_empty, my_color, actions):
         forward, left, back, right = 1, 1, 1, 1
@@ -188,19 +208,13 @@ class MiniChess(Game):
         if state_map[s.tostring()] >= 3: # threefold repetition -> draw
             return -1
         current_color = int(s[12, 0, 0])
-        has_king = False
         # check if we have a king
-        for i in range(5):
-            for j in range(5):
-                if s[current_color*6+5, i, j] == 1.:
-                    has_king = True
-        if not has_king: # our king has been captured, so we lose
-            return 1-current_color
-        
-        if not self.get_available_actions(s).any(): # we cannot move, but our king is still on the board
-            return -1
+        if not self.get_available_actions(s).any(): # we cannot move, so if we are in check, we lose
+            if self.in_check(current_color, s):
+                return 1-current_color
+            return -1 # otherwise, it's a stalemate
     
-        return None
+        return None # if we can move, the game is not over
 
     def get_action_tuple(self, a):
         for i in range(5):
